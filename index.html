@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Monitoramento de Vegetação em Rodovias</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            --radius: 8px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            color: #1b4d3e;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1.1em;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            margin: 0;
+            font-size: 2em;
+            color: #1b4d3e;
+        }
+
+        .stat-card p {
+            margin: 5px 0 0;
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        select,
+        button {
+            padding: 8px 12px;
+            border-radius: var(--radius);
+            border: 1px solid #ccc;
+            background-color: white;
+            font-size: 0.95em;
+            cursor: pointer;
+        }
+
+        button.active {
+            background-color: #1b4d3e;
+            color: white;
+            border-color: #1b4d3e;
+        }
+
+        .grid-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .card-header h3 {
+            margin: 0;
+            font-size: 1.2em;
+            color: #2c3e50;
+        }
+
+        .badge {
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: bold;
+            color: white;
+            text-transform: uppercase;
+        }
+
+        .card-body p {
+            margin: 8px 0;
+            font-size: 0.95em;
+        }
+
+        .acao-box {
+            margin-top: 15px;
+            background: #fdfefe;
+            border: 1px dashed #bdc3c7;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.9em;
+        }
+
+        .acao-box strong {
+            color: #c0392b;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Monitoramento de Vegetação em Rodovias</h1>
+            <p>Painel de Apoio à Tomada de Decisão para Equipes de Manutenção</p>
+        </header>
+
+        <!-- Indicadores Resumidos -->
+        <div class="stats-container" id="statsContainer">
+            <!-- Preenchido via JavaScript -->
+        </div>
+
+        <!-- Filtros e Ordenação -->
+        <div class="controls">
+            <div class="filter-group">
+                <button class="active" onclick="filtrarPontos('TODOS', this)">Todos</button>
+                <button onclick="filtrarPontos('PRIORITARIA', this)">Críticos / Prioritários</button>
+            </div>
+            <div>
+                <label for="ordenarSelect">Ordenar por:</label>
+                <select id="ordenarSelect" onchange="mudarOrdenacao()">
+                    <option value="prioridade">Maior Prioridade</option>
+                    <option value="altura">Maior Altura (cm)</option>
+                    <option value="km">Quilómetro (Km)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Grelha de Cartões (Dashboard) -->
+        <div class="grid-cards" id="dashboardGrid">
+            <!-- Preenchido via JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        // 1. Armazenamento de dados utilizando arrays de objetos
+        const pontosMonitorados = [
+            { id: 1, km: 104, alturaCm: 25, regiao: "Sul", ultimaLeitura: "2026-10-15" },
+            { id: 2, km: 112, alturaCm: 48, regiao: "Sul", ultimaLeitura: "2026-10-16" },
+            { id: 3, km: 130, alturaCm: 75, regiao: "Norte", ultimaLeitura: "2026-10-14" },
+            { id: 4, km: 145, alturaCm: 115, regiao: "Norte", ultimaLeitura: "2026-10-17" },
+            { id: 5, km: 150, alturaCm: 20, regiao: "Leste", ultimaLeitura: "2026-10-18" },
+            { id: 6, km: 162, alturaCm: 90, regiao: "Oeste", ultimaLeitura: "2026-10-15" },
+            { id: 7, km: 178, alturaCm: 135, regiao: "Oeste", ultimaLeitura: "2026-10-18" },
+            { id: 8, km: 190, alturaCm: 35, regiao: "Sul", ultimaLeitura: "2026-10-12" }
+        ];
+
+        let filtroAtual = 'TODOS';
+        let criterioOrdenacao = 'prioridade';
+
+        // 2. Função de análise automática da altura e definição de regras condicionais
+        function classificarVegetacao(altura) {
+            if (altura <= 30) {
+                return {
+                    condicao: "Monitorado",
+                    acao: "Manter rotina regular de monitoramento.",
+                    cor: "#2ecc71", // Verde
+                    nivelPrioridade: 1
+                };
+            } else if (altura <= 60) {
+                return {
+                    condicao: "Atenção",
+                    acao: "Programar vistoria visual na próxima quinzena.",
+                    cor: "#f39c12", // Amarelo/Laranja
+                    nivelPrioridade: 2
+                };
+            } else if (altura <= 100) {
+                return {
+                    condicao: "Intervenção Programada",
+                    acao: "Agendar roçada mecânica em até 7 dias úteis.",
+                    cor: "#d35400", // Laranja escuro
+                    nivelPrioridade: 3
+                };
+            } else {
+                return {
+                    condicao: "Intervenção Prioritária",
+                    acao: "Enviar equipa de corte imediatamente (Risco iminente à visibilidade).",
+                    cor: "#c0392b", // Vermelho
+                    nivelPrioridade: 4
+                };
+            }
+        }
+
+        // 3. Função principal para processar, filtrar e renderizar o Dashboard
+        function renderizarDashboard() {
+            const grid = document.getElementById('dashboardGrid');
+            const statsContainer = document.getElementById('statsContainer');
+
+            // Processamento dos dados utilizando .map() para enriquecer o array original
+            let dadosProcessados = pontosMonitorados.map(ponto => {
+                const classificacao = classificarVegetacao(ponto.alturaCm);
+                return {
+                    ...ponto,
+                    ...classificacao
+                };
+            });
+
+            // Aplicação de filtros
+            if (filtroAtual === 'PRIORITARIA') {
+                dadosProcessados = dadosProcessados.filter(p => p.nivelPrioridade >= 3);
+            }
+
+            // Ordenação dos dados
+            dadosProcessados.sort((a, b) => {
+                if (criterioOrdenacao === 'prioridade') {
+                    return b.nivelPrioridade - a.nivelPrioridade; // Maior prioridade primeiro
+                } else if (criterioOrdenacao === 'altura') {
+                    return b.alturaCm - a.alturaCm; // Maior altura primeiro
+                } else if (criterioOrdenacao === 'km') {
+                    return a.km - b.km; // Ordem crescente de quilómetros
+                }
+            });
+
+            // Renderizar cartões no HTML
+            grid.innerHTML = '';
+            if (dadosProcessados.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #666;">Nenhum ponto encontrado com os filtros atuais.</p>';
+            } else {
+                dadosProcessados.forEach(ponto => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.style.borderLeft = `6px solid ${ponto.cor}`;
+
+                    card.innerHTML = `
+                        <div>
+                            <div class="card-header">
+                                <h3>Km ${ponto.km}</h3>
+                                <span class="badge" style="background-color: ${ponto.cor}">${ponto.condicao}</span>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Altura da Vegetação:</strong> ${ponto.alturaCm} cm</p>
+                                <p><strong>Região:</strong> ${ponto.regiao}</p>
+                                <p><strong>Última Leitura:</strong> ${ponto.ultimaLeitura}</p>
+                                <div class="acao-box">
+                                    <strong>Ação Recomendada:</strong> ${ponto.acao}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+
+            // Atualizar os indicadores numéricos do topo
+            atualizarEstatisticas();
+        }
+
+        function atualizarEstatisticas() {
+            const total = pontosMonitorados.length;
+            const criticos = pontosMonitorados.filter(p => p.alturaCm > 100).length;
+            const programados = pontosMonitorados.filter(p => p.alturaCm > 60 && p.alturaCm <= 100).length;
+
+            const statsContainer = document.getElementById('statsContainer');
+            statsContainer.innerHTML = `
+                <div class="stat-card">
+                    <h3>${total}</h3>
+                    <p>Pontos Monitorados</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${criticos}</h3>
+                    <p>Intervenções Prioritárias</p>
+                </div>
+                <div class="stat-card">
+                    <h3>${programados}</h3>
+                    <p>Intervenções Programadas</p>
+                </div>
+            `;
+        }
+
+        // Funções de controlo de interface
+        function filtrarPontos(tipo, botaoEl) {
+            filtroAtual = tipo;
+            document.querySelectorAll('.filter-group button').forEach(btn => btn.classList.remove('active'));
+            botaoEl.classList.add('active');
+            renderizarDashboard();
+        }
+
+        function mudarOrdenacao() {
+            criterioOrdenacao = document.getElementById('ordenarSelect').value;
+            renderizarDashboard();
+        }
+
+        // Inicialização ao carregar a página
+        window.onload = () => {
+            renderizarDashboard();
+        };
+    </script>
+</body>
+
+</html>
